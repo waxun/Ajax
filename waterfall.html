@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<style type="text/css">
+		body{
+			margin: 0;
+			padding: 0;
+		}
+		#ul1{
+			width: 1048px;
+			margin:100px auto 0;
+		}
+		li{
+			list-style: none;
+			width: 247px;
+			float: left;
+			margin-right:10px; 
+		}
+		li div{
+			border: 1px solid black;
+			padding: 10px;
+			margin-bottom: 10px;
+		}
+		li div img{
+			width: 225px;
+			display: block;
+		}
+	</style>
+	<script type="text/javascript" src="ajax.js"></script>
+	<script type="text/javascript">
+		// 	流的实现=====往下拉的时候再加载
+		// 条件是
+		//    最短的那一列加载完成后，下面没数据了
+		//    最短一列li是否进入可视区了
+		// 判断是否加载完
+
+		window.onload = function(){
+			var oUl = document.getElementById('ul1');
+			var aLi = oUl.getElementsByTagName("li");
+			var iLen = aLi.length;
+			var iPage = 1;
+			var b = true;//一次只能加载一条，加载完成后再加载第二条;相当于关门
+			//初始化数据
+			getList();
+			function getList(){
+				ajax('get','getPic.php','cpage='+iPage,function(data){
+				// alert(1);
+				//需要把数据解析成对象再处理
+				var data = JSON.parse(data);
+				//如果后续没数据了
+				//如果数据加载完了呢，直接出去了，不开门了就好
+				if(!data.length){
+					return;
+				}
+				for(var i=0;i<data.length;i++){
+					//获取最短的li
+					var _index = getShort();
+					var oDiv = document.createElement("div");
+					var oImg = document.createElement("img");
+					oImg.src = data[i].preview;
+					//处理图片的比例问题
+					oImg.style.width = '225px';
+					oImg.style.height = data[i].height*(225/data[i].offsetWidth)+'px';
+					oDiv.appendChild(oImg);
+					var oP = document.createElement('p');
+					oP.innerHTML = data[i].title;
+					oDiv.appendChild(oP);
+
+					aLi[_index].appendChild(oDiv);
+				}
+					b = true;
+			});
+			}
+			
+
+			//取aLi中高度最小的值
+			function getShort(){
+				var index = 0;
+				var ih = aLi[index].offsetHeight;
+				for(var i=1;i<iLen;i++){
+					if(aLi[i].offsetHeight<ih){
+						index = i;
+						ih = aLi[i].offsetHeight;
+					}
+				}
+				return index;
+			}
+
+			//获取元素到页面顶部的绝对值
+			function getTop(obj){
+				var iTop=0;
+				while(obj){
+					iTop+=obj.offsetTop;
+					obj=obj.offsetParent;
+				}
+				return iTop;
+			}
+
+			window.onscroll = function(){
+				var _index = getShort();
+				var oLi = aLi[_index];
+
+				var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+
+				if(getTop(oLi)+oLi.offsetHeight<document.documentElement.clientHeight+scrollTop){
+						// alert(1);
+						//再把ajax重新做一遍
+						if(b){
+							b=false;
+							iPage++;
+							getList();
+						}
+						
+				}
+			}
+		}
+	</script>
+</head>
+<body>
+	<ul id="ul1">
+		<!-- 数据动态添加 -->
+		<li></li>
+		<li></li>
+		<li></li>
+		<li></li>
+	</ul>
+</body>
+</html>
